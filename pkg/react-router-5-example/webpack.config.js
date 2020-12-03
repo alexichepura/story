@@ -56,10 +56,32 @@
 // @ts-check
 require("dotenv").config()
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
-const WebpackAssetsManifest = require("webpack-assets-manifest")
+// const WebpackAssetsManifest = require("webpack-assets-manifest")
 
 const { join, resolve } = require("path")
 const { DefinePlugin } = require("webpack")
+
+// class Entrypoints {
+//   /**
+//    * @param {import('webpack').Compiler} [compiler]
+//    */
+//   apply(compiler) {
+//     compiler.hooks.emit.tapAsync("Entrypoints", ({ entrypoints, assets }, callback) => {
+//       const entrypointsAppFiles = entrypoints.get("app").getFiles()
+
+//       // @ts-ignore
+//       assets["entrypoints.json"] = {
+//         source: function () {
+//           return JSON.stringify(entrypointsAppFiles)
+//         },
+//         size: function () {
+//           return entrypointsAppFiles.length
+//         },
+//       }
+//       callback()
+//     })
+//   }
+// }
 
 const { NODE_ENV, WDS_PORT } = process.env
 const IS_PROD = NODE_ENV === "production"
@@ -125,16 +147,17 @@ const config = {
     ],
   },
   optimization: {
-    runtimeChunk: {
-      name: "manifest",
-    },
-    splitChunks: {
-      chunks: "all",
-    },
+    runtimeChunk: "single",
+    // runtimeChunk: {
+    //   name: "manifest",
+    // },
+    // splitChunks: {
+    //   chunks: "all",
+    // },
   },
   output: {
-    filename: `[name]${IS_PROD ? ".[chunkhash:6]" : ""}.js`,
-    chunkFilename: `[name]${IS_PROD ? ".[chunkhash:6]" : ""}.js`,
+    filename: `[name].js`,
+    chunkFilename: `[name].js`,
     path: DIST_DIR,
     publicPath: PUBLIC_OUTPUT_PATH,
     pathinfo: false, // https://webpack.js.org/guides/build-performance/#output-without-path-info
@@ -148,9 +171,7 @@ const config = {
       },
     }),
     new ForkTsCheckerWebpackPlugin(),
-    new WebpackAssetsManifest({
-      entrypoints: true,
-    }),
+    // new Entrypoints(),
   ],
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx"],

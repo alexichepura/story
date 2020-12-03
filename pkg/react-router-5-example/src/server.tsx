@@ -67,7 +67,10 @@ const template = (props: TTemplateProps) => `
   <script>window.ssr_data = ${JSON.stringify(props.data)}</script>
   <script>window.ssr_statusCode = ${props.statusCode}</script>
   <script src="${
-    WDS_PORT ? `http://localhost:${WDS_PORT}/dist/browser.js` : "/browser.js"
+    WDS_PORT ? `http://localhost:${WDS_PORT}/dist/runtime.js` : "/dist/runtime.js"
+  }"></script>
+  <script src="${
+    WDS_PORT ? `http://localhost:${WDS_PORT}/dist/browser.js` : "/dist/browser.js"
   }"></script>
 </body>
 </html>
