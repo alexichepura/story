@@ -1,0 +1,14 @@
+{
+  "author": "Alexi Chepura",
+  "name": "story-monorepo",
+  "license": "MIT",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "pkg/*"
+    ]
+  },
+  "resolutions": {
+    "@types/react": "^16"
+  }
+}

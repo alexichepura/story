@@ -1,0 +1,37 @@
+{
+  "author": "Alexi Chepura",
+  "description": "Story is a microframework for universal SPAs with React.",
+  "devDependencies": {
+    "@types/history": "^4.7.7",
+    "@types/node": "^14.14.10",
+    "history": "^4.9.0",
+    "tslib": "^2.0.3",
+    "typescript": "^4.1.2"
+  },
+  "files": [
+    "dist/*(*.ts|*.js|*.map)",
+    "package.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "story",
+  "peerDependencies": {
+    "history": "4.x"
+  },
+  "keywords": [
+    "microframework",
+    "universal",
+    "SPA",
+    "SSR"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -r dist"
+  },
+  "sideEffects": false,
+  "types": "dist/index.d.ts",
+  "typings": "dist/index.d.ts",
+  "version": "0.1.1"
+}

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.packages.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "incremental": true,
+    "composite": true,
+    "noUnusedLocals": false
+  },
+  "references": [
+    {
+      "path": "../core"
+    }
+  ]
+  // "exclude": ["node_modules", "dist"]
+}

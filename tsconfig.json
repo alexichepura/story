@@ -1,0 +1,6 @@
+{
+  "references": [{ "path": "./src/story" }],
+  "files": [],
+  "include": [],
+  "exclude": ["**/node_modules"]
+}

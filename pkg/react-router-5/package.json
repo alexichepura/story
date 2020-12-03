@@ -1,0 +1,47 @@
+{
+  "author": "Alexi Chepura",
+  "description": "story-react-router-5 is a plugin for story",
+  "devDependencies": {
+    "@types/history": "^4.7.7",
+    "@types/node": "^14.14.10",
+    "@types/react": "^16",
+    "@types/react-dom": "^16",
+    "@types/react-router": "^5.1.8",
+    "@types/react-router-config": "^5.0.0",
+    "@types/react-router-dom": "^5.1.5"
+  },
+  "files": [
+    "dist/*(*.ts|*.js|*.map)",
+    "package.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "story-react-router-5",
+  "peerDependencies": {
+    "history": "4",
+    "react": "*",
+    "react-dom": "*",
+    "react-router": "5.*",
+    "react-router-config": "5.*",
+    "react-router-dom": "5.*"
+  },
+  "keywords": [
+    "story",
+    "microframework",
+    "plugin",
+    "react",
+    "universal",
+    "SPA",
+    "SSR"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -r dist"
+  },
+  "sideEffects": false,
+  "types": "dist/index.d.ts",
+  "typings": "dist/index.d.ts",
+  "version": "0.1.0"
+}
