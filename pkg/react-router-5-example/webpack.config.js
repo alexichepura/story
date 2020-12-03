@@ -95,7 +95,7 @@ const config = {
   },
   devtool: IS_PROD ? "source-map" : "eval-cheap-module-source-map",
   entry: {
-    app: "./src/browser.tsx",
+    browser: "./src/browser.tsx",
   },
   mode: IS_PROD ? "production" : "development",
   module: {
