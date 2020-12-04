@@ -20,7 +20,7 @@ const Browser: FC<{ history: BrowserHistory; story: Story }> = ({ history, story
     history.listen(async ({ location, action }) => {
       story.abortLoading()
       const branch = getBranch(routes, location.pathname)
-      await story.loadData(branch, location.pathname, action)
+      await story.loadData(branch, location.pathname, action === "PUSH")
       set_render_location(location)
     })
   }, [])

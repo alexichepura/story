@@ -1,11 +1,10 @@
 import React, { createContext, FC, useContext } from "react"
-import { Outlet, Route, Routes } from "react-router"
-import { matchRoutes } from "react-router-config"
-import { Link, match } from "react-router-dom"
+import { matchRoutes, Outlet, PartialRouteObject, useRoutes } from "react-router"
+import { Link } from "react-router-dom"
 import { Story, TBranchItem, TRouteConfig } from "story"
 import { DbClient, TArticle } from "./db"
 
-export type TReactRouterRouteConfig = RouteConfig & TRouteConfig
+export type TReactRouterRouteConfig = PartialRouteObject & TRouteConfig
 export type TGetBranch = (routes: TRouteConfig[], pathname: string) => TBranchItem[]
 
 type TDataRoutesProps = {
@@ -14,31 +13,33 @@ type TDataRoutesProps = {
 }
 export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
   console.log("DataRoutes", routes.length, story.state.location)
-  return (
-    <Routes>
-      {routes.map((route, i) => {
-        const key = route.dataKey && story.state.keys[route.dataKey]
-        const data = key && story.data[key]
-        return (
-          <Route
-            key={route.key || i}
-            path={route.path}
-            render={(_props) => {
-              const props = {
-                ..._props,
-                ...data,
-                route: route,
-                abortController: story.state.abortController,
-              }
-              return route.render
-                ? route.render(props)
-                : route.component && <route.component {...props} />
-            }}
-          />
-        )
-      })}
-    </Routes>
-  )
+  const element = useRoutes(routes)
+  return element
+  // return (
+  //   <Routes>
+  //     {routes.map((route, i) => {
+  //       const key = route.dataKey && story.state.keys[route.dataKey]
+  //       const data = key && story.data[key]
+  //       return (
+  //         <Route
+  //           key={route.key || i}
+  //           path={route.path}
+  //           render={(_props) => {
+  //             const props = {
+  //               ..._props,
+  //               ...data,
+  //               route: route,
+  //               abortController: story.state.abortController,
+  //             }
+  //             return route.render
+  //               ? route.render(props)
+  //               : route.component && <route.component {...props} />
+  //           }}
+  //         />
+  //       )
+  //     })}
+  //   </Routes>
+  // )
 }
 
 type TAppRouteConfig = TRouteConfig & {
@@ -228,40 +229,38 @@ export const NotFound: FC = () => (
 
 export const routes: TReactRouterRouteConfig[] = [
   {
-    component: Layout as FC,
+    element: Layout,
     dataKey: "layout",
     loadData: layoutLoader,
-    routes: [
+    children: [
       {
         path: "/",
-        exact: true,
-        component: Home as FC,
+        element: Home,
         dataKey: "home",
         loadData: homeLoader,
       },
       {
         path: "/long-loading",
-        exact: true,
-        component: LongLoading as FC,
+        element: LongLoading,
         dataKey: "longLoading",
         loadData: longLoadingLoader,
       },
       {
         path: "/subarticle/:slug",
-        component: Article as FC,
+        element: Article,
         exact: true,
         dataKey: "subarticle",
         loadData: articleLoader,
       },
       {
         path: "/:slug",
-        component: Article as FC,
+        element: Article,
         exact: true,
         dataKey: "article",
         loadData: articleLoader,
       },
       {
-        component: NotFound as FC,
+        element: NotFound,
         path: "/*",
         dataKey: "404",
         loadData: async ({ story }) => story.set404(),

@@ -49,7 +49,7 @@ const usePreloader = (story: Story, routes: TReactRouterRouteConfig[], getBranch
     history.listen(async (new_location, action) => {
       story.abortLoading()
       const branch = getBranch(routes, new_location.pathname)
-      await story.loadData(branch, new_location.pathname, action)
+      await story.loadData(branch, new_location.pathname, action === "PUSH")
       set_render_location(new_location)
     })
   }, [])

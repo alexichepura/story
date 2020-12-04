@@ -1,5 +1,3 @@
-import { Action, createLocation, Location } from "history"
-
 export type TRouteConfig = {
   loadData?: (...args: any) => Promise<any>
   dataKey?: string
@@ -9,11 +7,10 @@ export type TRouteConfig = {
 export type TStatusCode = number
 export type TBranchItem = { route: TRouteConfig; matchUrl: string }
 
+type TLocation = any
 export type TState = {
-  pathname: string
-  matches: TBranchItem[]
   abortController?: AbortController
-  location: Location
+  location: TLocation
   loading: boolean
   statusCode: TStatusCode
   keys: Record<string, string>
@@ -65,15 +62,26 @@ export class Story {
     this.states[i] = { ...(this.states[i] || {}), ...state }
   }
 
-  loadData = async (branch: TBranchItem[], pathname: string, action?: Action): Promise<boolean> => {
-    const location = createLocation(pathname)
+  loadData = async (
+    branch: TBranchItem[],
+    location: TLocation,
+    push?: boolean
+  ): Promise<boolean> => {
     const i = this.i + 1
     const abortController =
       "AbortController" in global
         ? new AbortController()
         : ({ signal: { aborted: false } } as AbortController)
 
-    const keys = getBranchKeys(branch)
+    const keys = branch.reduce<Record<string, string>>((p, c) => {
+      if (c.route.dataKey) {
+        const key = getKey(c.route.dataKey, c.matchUrl)
+        if (key) {
+          p[c.route.dataKey] = key
+        }
+      }
+      return p
+    }, {})
 
     if (i === 0) {
       this.merge(0, { location, keys })
@@ -83,7 +91,7 @@ export class Story {
       const data = key ? this.data[key] : null
       return (
         !data ||
-        (action === "PUSH" &&
+        (push &&
           branchItem.route.dataKey &&
           this.state.keys[branchItem.route.dataKey] !== keys[branchItem.route.dataKey])
       )
@@ -91,7 +99,6 @@ export class Story {
     this.merge(i, {
       keys,
       location,
-      pathname,
       abortController,
       loading: true,
     })
@@ -173,16 +180,5 @@ export async function loadBranchDataObject(
   return resultsObject
 }
 
-export const getKey = (k1: string | undefined, k2: string | undefined): string | undefined =>
+const getKey = (k1: string | undefined, k2: string | undefined): string | undefined =>
   k1 && k2 ? k1 + ":" + k2 : undefined
-
-export const getBranchKeys = (matches: TBranchItem[]) =>
-  matches.reduce<Record<string, string>>((p, c) => {
-    if (c.route.dataKey) {
-      const key = getKey(c.route.dataKey, c.matchUrl)
-      if (key) {
-        p[c.route.dataKey] = key
-      }
-    }
-    return p
-  }, {})
