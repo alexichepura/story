@@ -2,7 +2,11 @@ export type TLoadData = (...args: any | undefined) => Promise<any>
 export type TDataKey = string
 
 export type TStatusCode = number
-export type TBranchItem = { dataKey?: TDataKey; loadData?: TLoadData; matchUrl: string }
+export interface TBranchItem {
+  key?: TDataKey
+  load?: TLoadData
+  url: string
+}
 
 type TLocation = any
 export type TState = {
@@ -46,6 +50,7 @@ export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
 
   return {
     loadData: async (branch, location, push) => {
+      console.log("loadData", location)
       const i = I + 1
       const abortController =
         "AbortController" in global
@@ -53,10 +58,10 @@ export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
           : ({ signal: { aborted: false } } as AbortController)
 
       const keys = branch.reduce<Record<string, string>>((p, c) => {
-        if (c.dataKey) {
-          const key = getKey(c.dataKey, c.matchUrl)
+        if (c.key) {
+          const key = getKey(c.key, c.url)
           if (key) {
-            p[c.dataKey] = key
+            p[c.key] = key
           }
         }
         return p
@@ -65,14 +70,12 @@ export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
       if (i === 0) {
         merge(0, { location, keys })
       }
-      const diffedMatches = branch.filter((branchItem) => {
-        const key = getKey(branchItem.dataKey, branchItem.matchUrl)
+      const diff = branch.filter((branchItem) => {
+        const key = getKey(branchItem.key, branchItem.url)
         const _data = key ? data[key] : null
         return (
           !_data ||
-          (push &&
-            branchItem.dataKey &&
-            states[I].keys[branchItem.dataKey] !== keys[branchItem.dataKey])
+          (push && branchItem.key && states[I].keys[branchItem.key] !== keys[branchItem.key])
         )
       })
 
@@ -83,13 +86,16 @@ export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
         loading: true,
       })
 
+      console.log("d1", diff)
       try {
         const [loadedData] = await Promise.all([
-          loadBranchDataObject(diffedMatches, (branchItem) => {
+          loadBranchDataObject(diff, (branchItem) => {
+            console.log("branchItem", branchItem)
             return props.branchItemsMapper(branchItem, abortController)
           }),
           // loadBranchComponents(branch),
         ])
+        console.log("loadedData", loadedData)
         Object.entries(loadedData).forEach(([key, matchData]) => {
           data[key] = matchData
         })
@@ -141,17 +147,18 @@ type TPromiseConfig = {
 
 type TLoadDataResult = any
 export async function loadBranchDataObject(
-  branches: TBranchItem[],
+  branch: TBranchItem[],
   branchItemsMapper: (branchItem: TBranchItem) => any[]
 ): Promise<TLoadDataResult> {
-  const promisesConfig: TPromiseConfig[] = branches
+  const promisesConfig: TPromiseConfig[] = branch
     .map(
       (branchItem: TBranchItem): TPromiseConfig => {
-        if (branchItem.loadData) {
+        console.log("loadBranchDataObject branchItem", branchItem)
+        if (branchItem.load) {
           const loaderArgs = branchItemsMapper(branchItem)
           return {
-            dataKey: getKey(branchItem.dataKey, branchItem.matchUrl) || "",
-            promise: branchItem.loadData(...loaderArgs),
+            dataKey: getKey(branchItem.key, branchItem.url) || "",
+            promise: branchItem.load(...loaderArgs),
           }
         }
         return Promise.resolve(null) as any

@@ -12,7 +12,7 @@ export type TAppStory = IStory<Location>
 type TAppRouteConfig = RouteConfig & {
   routes?: TAppRouteConfig[]
   dataKey?: string
-  loadData: TLoadData<any>
+  loadData?: TLoadData<any>
 }
 type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
   route: TAppRouteConfig & TAppRouteConfig
@@ -25,17 +25,25 @@ function useStory(): TAppStory {
 
 export type TAppBranchItem = TBranchItem & { match: match }
 
-export const getBranch: TGetBranch = (routes, pathname) =>
-  matchRoutes(routes, pathname).map((m) => ({
-    route: m.route,
-    matchUrl: m.match.url,
-    match: m.match,
-  }))
+export const getBranch: TGetBranch<TAppRouteConfig> = (routes, pathname) => {
+  const items = matchRoutes(routes, pathname).map((m) => {
+    const branchItem: TBranchItem = {
+      load: m.route.loadData,
+      url: m.match.url,
+      key: m.route.dataKey,
+    }
+    console.log("getBranch branchItem", branchItem)
+    return branchItem
+  })
+  return items
+}
 
 export const createBranchItemMapper = (story: TAppStory, deps: TDeps) => (
   branchItem: TAppBranchItem,
   abortController: AbortController
-): [TLoadDataProps<{}>, TDeps] => [{ story, abortController, match: branchItem.match }, deps]
+): [TLoadDataProps<{}>, TDeps] => {
+  return [{ story, abortController, match: branchItem.match }, deps]
+}
 
 type TLoadDataProps<M> = {
   story: TAppStory

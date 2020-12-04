@@ -3,7 +3,7 @@ import { Route, Switch, useHistory } from "react-router"
 import { RouteConfig } from "react-router-config"
 import { IStory, TBranchItem } from "story"
 
-export type TGetBranch = (routes: RouteConfig[], pathname: string) => TBranchItem[]
+export type TGetBranch<T = RouteConfig> = (routes: T[], pathname: string) => TBranchItem[]
 
 type TDataRoutesProps = {
   routes: RouteConfig[]
