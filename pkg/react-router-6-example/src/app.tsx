@@ -1,15 +1,50 @@
 import React, { createContext, FC, useContext } from "react"
-import { RouteComponentProps } from "react-router"
+import { Outlet, Route, Routes } from "react-router"
 import { matchRoutes } from "react-router-config"
 import { Link, match } from "react-router-dom"
 import { Story, TBranchItem, TRouteConfig } from "story"
-import { DataRoutes, TGetBranch, TReactRouterRouteConfig } from "story-react-router-5"
 import { DbClient, TArticle } from "./db"
+
+export type TReactRouterRouteConfig = RouteConfig & TRouteConfig
+export type TGetBranch = (routes: TRouteConfig[], pathname: string) => TBranchItem[]
+
+type TDataRoutesProps = {
+  routes: TReactRouterRouteConfig[]
+  story: Story
+}
+export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
+  console.log("DataRoutes", routes.length, story.state.location)
+  return (
+    <Routes>
+      {routes.map((route, i) => {
+        const key = route.dataKey && story.state.keys[route.dataKey]
+        const data = key && story.data[key]
+        return (
+          <Route
+            key={route.key || i}
+            path={route.path}
+            render={(_props) => {
+              const props = {
+                ..._props,
+                ...data,
+                route: route,
+                abortController: story.state.abortController,
+              }
+              return route.render
+                ? route.render(props)
+                : route.component && <route.component {...props} />
+            }}
+          />
+        )
+      })}
+    </Routes>
+  )
+}
 
 type TAppRouteConfig = TRouteConfig & {
   routes?: TAppRouteConfig[]
 }
-type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
+type TRouteComponentProps<D> = {
   route: TReactRouterRouteConfig & TAppRouteConfig
   abortController?: AbortController
 } & D
@@ -55,11 +90,8 @@ type TLayoutData = {
   articles: TArticle[]
 }
 type TLayoutProps = TRouteComponentProps<TLayoutData>
-export const Layout: FC<TLayoutProps> = ({ route, year, articles }) => {
+export const Layout: FC<TLayoutProps> = ({ year, articles }) => {
   const story = useStory()
-  if (!route.routes) {
-    throw new Error("no routes")
-  }
   return (
     <div>
       <header>
@@ -96,7 +128,7 @@ export const Layout: FC<TLayoutProps> = ({ route, year, articles }) => {
         </div>
       </header>
       <main style={{ marginBottom: "1000px" }}>
-        {story.is404 ? <NotFound /> : <DataRoutes routes={route.routes} story={story} />}
+        <Outlet />
       </main>
       <div id="hash1" style={{ marginBottom: "1000px" }}>
         hash1
@@ -141,7 +173,7 @@ const homeLoader: TLoadData<THomeData> = async ({ abortController }, { apiSdk })
 
 // ARTICLE
 type TArticleMatchParams = { slug: string }
-type TArticleProps = TRouteComponentProps<TArticleData, TArticleMatchParams>
+type TArticleProps = TRouteComponentProps<TArticleData>
 type TArticleData = {
   article: TArticle
 }

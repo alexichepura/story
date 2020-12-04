@@ -1,11 +1,36 @@
-import { createBrowserHistory } from "history"
-import React from "react"
+import { BrowserHistory, createBrowserHistory, Location } from "history"
+import React, { FC, useEffect, useState } from "react"
 import { render } from "react-dom"
 import { Router } from "react-router"
 import { Story } from "story"
-import { DataRoutes, Preloader } from "story-react-router-5"
-import { createBranchItemMapper, getBranch, routes, StoryContext, TAppBranchItem } from "./app"
+import {
+  createBranchItemMapper,
+  DataRoutes,
+  getBranch,
+  routes,
+  StoryContext,
+  TAppBranchItem,
+} from "./app"
 import { DbClient } from "./db"
+
+const Browser: FC<{ history: BrowserHistory; story: Story }> = ({ history, story }) => {
+  const [, set_render_location] = useState(story.state.location)
+
+  useEffect(() => {
+    history.listen(async ({ location, action }) => {
+      story.abortLoading()
+      const branch = getBranch(routes, location.pathname)
+      await story.loadData(branch, location.pathname, action)
+      set_render_location(location)
+    })
+  }, [])
+
+  return (
+    <Router navigator={history} location={story.state.location as Location<{}>}>
+      <DataRoutes routes={routes} story={story} />
+    </Router>
+  )
+}
 
 const init = async () => {
   const history = createBrowserHistory()
@@ -24,11 +49,7 @@ const init = async () => {
   const el = document.getElementById("app")
   render(
     <StoryContext.Provider value={story}>
-      <Router history={history}>
-        <Preloader routes={routes} getBranch={getBranch} story={story}>
-          <DataRoutes routes={routes} story={story} />
-        </Preloader>
-      </Router>
+      <Browser history={history} story={story} />
     </StoryContext.Provider>,
     el
   )
