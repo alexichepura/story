@@ -1,3 +1,4 @@
+import { Location } from "history"
 import React, { createContext, FC, useContext } from "react"
 import { RouteComponentProps } from "react-router"
 import { matchRoutes, RouteConfig } from "react-router-config"
@@ -5,6 +6,8 @@ import { Link, match } from "react-router-dom"
 import { IStory, TBranchItem } from "story"
 import { DataRoutes, TGetBranch } from "story-react-router-5"
 import { DbClient, TArticle } from "./db"
+
+export type TAppStory = IStory<Location>
 
 type TAppRouteConfig = RouteConfig & {
   routes?: TAppRouteConfig[]
@@ -15,8 +18,8 @@ type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
   route: TAppRouteConfig & TAppRouteConfig
   abortController?: AbortController
 } & D
-export const StoryContext = createContext((null as any) as IStory)
-function useStory(): IStory {
+export const StoryContext = createContext((null as any) as TAppStory)
+function useStory(): TAppStory {
   return useContext(StoryContext)
 }
 
@@ -29,13 +32,13 @@ export const getBranch: TGetBranch = (routes, pathname) =>
     match: m.match,
   }))
 
-export const createBranchItemMapper = (story: IStory, deps: TDeps) => (
+export const createBranchItemMapper = (story: TAppStory, deps: TDeps) => (
   branchItem: TAppBranchItem,
   abortController: AbortController
 ): [TLoadDataProps<{}>, TDeps] => [{ story, abortController, match: branchItem.match }, deps]
 
 type TLoadDataProps<M> = {
-  story: IStory
+  story: TAppStory
   match: match<M>
   abortController: AbortController
 }

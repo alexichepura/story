@@ -1,11 +1,19 @@
 require("dotenv").config()
+import { createLocation } from "history"
 import { createServer } from "http"
 import React from "react"
 import { renderToString } from "react-dom/server"
 import { StaticRouter } from "react-router"
-import { createStory, IStory } from "story"
+import { createStory } from "story"
 import { DataRoutes } from "story-react-router-5"
-import { createBranchItemMapper, getBranch, routes, StoryContext, TAppBranchItem } from "./app"
+import {
+  createBranchItemMapper,
+  getBranch,
+  routes,
+  StoryContext,
+  TAppBranchItem,
+  TAppStory,
+} from "./app"
 import { DbClient } from "./db"
 import { env } from "./env"
 
@@ -19,7 +27,7 @@ const server = createServer(async (request, response) => {
       response.end(template({ html: "", data: null, statusCode: 200 }))
     } else {
       const deps = { apiSdk: new DbClient() }
-      const story: IStory = createStory({
+      const story: TAppStory = createStory({
         branchItemsMapper: (branchItem, abortController) => {
           return createBranchItemMapper(story, deps)(branchItem as TAppBranchItem, abortController)
         },
@@ -27,7 +35,8 @@ const server = createServer(async (request, response) => {
           console.log("onLoadError", err)
         },
       })
-      await story.loadData(getBranch(routes, pathname), pathname)
+      const location = createLocation(pathname)
+      await story.loadData(getBranch(routes, pathname), location)
       console.log("server", story.state.location)
       const html = renderToString(
         <StoryContext.Provider value={story}>

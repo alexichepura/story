@@ -22,16 +22,16 @@ type TStoryProps = {
   branchItemsMapper: TBranchItemsMapper
   onLoadError: (err: Error) => void
 }
-export interface IStory {
+export interface IStory<L = TLocation> {
   abortLoading: () => void
   setStatus: (statusCode: TStatusCode) => void
-  loadData: (branch: TBranchItem[], location: TLocation, push?: boolean) => Promise<boolean>
+  loadData: (branch: TBranchItem[], location: L, push?: boolean) => Promise<boolean>
   loading: boolean
   state: TState
   data: TData
 }
 
-export const createStory = (props: TStoryProps): IStory => {
+export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
   let I: number = -1
   const maxStates = 2
   const states: TStates = []
@@ -45,11 +45,7 @@ export const createStory = (props: TStoryProps): IStory => {
   }
 
   return {
-    loadData: async (
-      branch: TBranchItem[],
-      location: TLocation,
-      push?: boolean
-    ): Promise<boolean> => {
+    loadData: async (branch, location, push) => {
       const i = I + 1
       const abortController =
         "AbortController" in global
@@ -123,16 +119,16 @@ export const createStory = (props: TStoryProps): IStory => {
         state.loading = false
       })
     },
-    setStatus: (statusCode: TStatusCode) => {
+    setStatus: (statusCode) => {
       states[I + 1].statusCode = statusCode
     },
-    get loading(): boolean {
+    get loading() {
       return states.some((state) => state.loading)
     },
-    get state(): TState {
+    get state() {
       return states[I]
     },
-    get data(): TData {
+    get data() {
       return data
     },
   }
