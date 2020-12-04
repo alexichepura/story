@@ -10,7 +10,6 @@ type TDataRoutesProps = {
   story: IStory
 }
 export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
-  console.log("DataRoutes", routes.length, story.state.location)
   return (
     <Switch>
       {routes.map((route, i) => {

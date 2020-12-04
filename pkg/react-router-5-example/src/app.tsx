@@ -14,10 +14,7 @@ type TAppRouteConfig = RouteConfig & {
   dataKey?: string
   loadData?: TLoadData<any>
 }
-type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
-  route: TAppRouteConfig & TAppRouteConfig
-  abortController?: AbortController
-} & D
+
 export const StoryContext = createContext((null as any) as TAppStory)
 function useStory(): TAppStory {
   return useContext(StoryContext)
@@ -27,12 +24,12 @@ export type TAppBranchItem = TBranchItem & { match: match }
 
 export const getBranch: TGetBranch<TAppRouteConfig> = (routes, pathname) => {
   const items = matchRoutes(routes, pathname).map((m) => {
-    const branchItem: TBranchItem = {
+    const branchItem: TAppBranchItem = {
       load: m.route.loadData,
       url: m.match.url,
       key: m.route.dataKey,
+      match: m.match,
     }
-    console.log("getBranch branchItem", branchItem)
     return branchItem
   })
   return items
@@ -61,7 +58,10 @@ export type TDeps = { apiSdk: DbClient }
 type TLoadData<T, M = any> = TStoryLoadData<T, M, TDeps>
 
 const link_style: React.CSSProperties = { marginLeft: "1rem" }
-
+type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
+  route: TAppRouteConfig & TAppRouteConfig
+  abortController?: AbortController
+} & D
 // LAYOUT
 type TLayoutData = {
   year: number

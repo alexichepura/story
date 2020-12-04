@@ -50,7 +50,6 @@ export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
 
   return {
     loadData: async (branch, location, push) => {
-      console.log("loadData", location)
       const i = I + 1
       const abortController =
         "AbortController" in global
@@ -86,16 +85,13 @@ export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
         loading: true,
       })
 
-      console.log("d1", diff)
       try {
         const [loadedData] = await Promise.all([
           loadBranchDataObject(diff, (branchItem) => {
-            console.log("branchItem", branchItem)
             return props.branchItemsMapper(branchItem, abortController)
           }),
           // loadBranchComponents(branch),
         ])
-        console.log("loadedData", loadedData)
         Object.entries(loadedData).forEach(([key, matchData]) => {
           data[key] = matchData
         })
@@ -153,7 +149,6 @@ export async function loadBranchDataObject(
   const promisesConfig: TPromiseConfig[] = branch
     .map(
       (branchItem: TBranchItem): TPromiseConfig => {
-        console.log("loadBranchDataObject branchItem", branchItem)
         if (branchItem.load) {
           const loaderArgs = branchItemsMapper(branchItem)
           return {
