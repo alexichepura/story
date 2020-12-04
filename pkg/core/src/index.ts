@@ -1,11 +1,8 @@
-export type TRouteConfig = {
-  loadData?: (...args: any) => Promise<any>
-  dataKey?: string
-  routes?: TRouteConfig[]
-}
+export type TLoadData = (...args: any | undefined) => Promise<any>
+export type TDataKey = string
 
 export type TStatusCode = number
-export type TBranchItem = { route: TRouteConfig; matchUrl: string }
+export type TBranchItem = { dataKey?: TDataKey; loadData?: TLoadData; matchUrl: string }
 
 type TLocation = any
 export type TState = {
@@ -60,10 +57,10 @@ export const createStory = (props: TStoryProps): IStory => {
           : ({ signal: { aborted: false } } as AbortController)
 
       const keys = branch.reduce<Record<string, string>>((p, c) => {
-        if (c.route.dataKey) {
-          const key = getKey(c.route.dataKey, c.matchUrl)
+        if (c.dataKey) {
+          const key = getKey(c.dataKey, c.matchUrl)
           if (key) {
-            p[c.route.dataKey] = key
+            p[c.dataKey] = key
           }
         }
         return p
@@ -73,13 +70,13 @@ export const createStory = (props: TStoryProps): IStory => {
         merge(0, { location, keys })
       }
       const diffedMatches = branch.filter((branchItem) => {
-        const key = getKey(branchItem.route.dataKey, branchItem.matchUrl)
+        const key = getKey(branchItem.dataKey, branchItem.matchUrl)
         const _data = key ? data[key] : null
         return (
           !_data ||
           (push &&
-            branchItem.route.dataKey &&
-            states[I].keys[branchItem.route.dataKey] !== keys[branchItem.route.dataKey])
+            branchItem.dataKey &&
+            states[I].keys[branchItem.dataKey] !== keys[branchItem.dataKey])
         )
       })
 
@@ -154,11 +151,11 @@ export async function loadBranchDataObject(
   const promisesConfig: TPromiseConfig[] = branches
     .map(
       (branchItem: TBranchItem): TPromiseConfig => {
-        if (branchItem.route.loadData) {
+        if (branchItem.loadData) {
           const loaderArgs = branchItemsMapper(branchItem)
           return {
-            dataKey: getKey(branchItem.route.dataKey, branchItem.matchUrl) || "",
-            promise: branchItem.route.loadData(...loaderArgs),
+            dataKey: getKey(branchItem.dataKey, branchItem.matchUrl) || "",
+            promise: branchItem.loadData(...loaderArgs),
           }
         }
         return Promise.resolve(null) as any

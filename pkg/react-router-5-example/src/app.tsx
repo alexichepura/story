@@ -1,16 +1,18 @@
 import React, { createContext, FC, useContext } from "react"
 import { RouteComponentProps } from "react-router"
-import { matchRoutes } from "react-router-config"
+import { matchRoutes, RouteConfig } from "react-router-config"
 import { Link, match } from "react-router-dom"
-import { IStory, TBranchItem, TRouteConfig } from "story"
-import { DataRoutes, TGetBranch, TReactRouterRouteConfig } from "story-react-router-5"
+import { IStory, TBranchItem } from "story"
+import { DataRoutes, TGetBranch } from "story-react-router-5"
 import { DbClient, TArticle } from "./db"
 
-type TAppRouteConfig = TRouteConfig & {
+type TAppRouteConfig = RouteConfig & {
   routes?: TAppRouteConfig[]
+  dataKey?: string
+  loadData: TLoadData<any>
 }
 type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
-  route: TReactRouterRouteConfig & TAppRouteConfig
+  route: TAppRouteConfig & TAppRouteConfig
   abortController?: AbortController
 } & D
 export const StoryContext = createContext((null as any) as IStory)
@@ -198,7 +200,7 @@ export const NotFound: FC = () => (
   </div>
 )
 
-export const routes: TReactRouterRouteConfig[] = [
+export const routes: TAppRouteConfig[] = [
   {
     component: Layout as FC,
     dataKey: "layout",
@@ -236,7 +238,7 @@ export const routes: TReactRouterRouteConfig[] = [
         component: NotFound as FC,
         path: "/*",
         dataKey: "404",
-        loadData: async ({ story }) => story.set404(),
+        loadData: async ({ story }) => story.setStatus(404),
       },
     ],
   },

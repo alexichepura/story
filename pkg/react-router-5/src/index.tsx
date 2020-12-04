@@ -1,13 +1,12 @@
 import React, { FC, useEffect, useState } from "react"
 import { Route, Switch, useHistory } from "react-router"
 import { RouteConfig } from "react-router-config"
-import { IStory, TBranchItem, TRouteConfig } from "story"
+import { IStory, TBranchItem } from "story"
 
-export type TReactRouterRouteConfig = RouteConfig & TRouteConfig
-export type TGetBranch = (routes: TRouteConfig[], pathname: string) => TBranchItem[]
+export type TGetBranch = (routes: RouteConfig[], pathname: string) => TBranchItem[]
 
 type TDataRoutesProps = {
-  routes: TReactRouterRouteConfig[]
+  routes: RouteConfig[]
   story: IStory
 }
 export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
@@ -41,7 +40,7 @@ export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
   )
 }
 
-const usePreloader = (story: IStory, routes: TReactRouterRouteConfig[], getBranch: TGetBranch) => {
+const usePreloader = (story: IStory, routes: RouteConfig[], getBranch: TGetBranch) => {
   const history = useHistory()
   const [, set_render_location] = useState(story.state.location)
 
@@ -59,7 +58,7 @@ const usePreloader = (story: IStory, routes: TReactRouterRouteConfig[], getBranc
 
 export const Preloader: FC<{
   story: IStory
-  routes: TReactRouterRouteConfig[]
+  routes: RouteConfig[]
   getBranch: TGetBranch
 }> = ({ children, story, routes, getBranch }) => {
   const render_location = usePreloader(story, routes, getBranch)
