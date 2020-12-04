@@ -39,7 +39,7 @@ export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
   let I: number = -1
   const maxStates = 2
   const states: TStates = []
-  const data: TData = {}
+  const data: TData = props.data || {}
 
   function merge(i: number, state: Partial<TState>) {
     states[i] = { ...(states[i] || {}), ...state }

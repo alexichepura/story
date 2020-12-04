@@ -37,7 +37,6 @@ const server = createServer(async (request, response) => {
       })
       const location = createLocation(pathname)
       await story.loadData(getBranch(routes, pathname), location)
-      console.log("server", story.state.location)
       const html = renderToString(
         <StoryContext.Provider value={story}>
           <StaticRouter location={story.state.location}>
