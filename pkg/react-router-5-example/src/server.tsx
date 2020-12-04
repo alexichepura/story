@@ -3,8 +3,8 @@ import { createServer } from "http"
 import React from "react"
 import { renderToString } from "react-dom/server"
 import { StaticRouter } from "react-router"
-import { Story } from "story"
-// import { DataRoutes } from "story-react-router-5"
+import { createStory, IStory } from "story"
+import { DataRoutes } from "story-react-router-5"
 import { createBranchItemMapper, getBranch, routes, StoryContext, TAppBranchItem } from "./app"
 import { DbClient } from "./db"
 import { env } from "./env"
@@ -19,9 +19,12 @@ const server = createServer(async (request, response) => {
       response.end(template({ html: "", data: null, statusCode: 200 }))
     } else {
       const deps = { apiSdk: new DbClient() }
-      const story: Story = new Story({
+      const story: IStory = createStory({
         branchItemsMapper: (branchItem, abortController) => {
           return createBranchItemMapper(story, deps)(branchItem as TAppBranchItem, abortController)
+        },
+        onLoadError: (err) => {
+          console.log("onLoadError", err)
         },
       })
       await story.loadData(getBranch(routes, pathname), pathname)

@@ -2,7 +2,7 @@ import React, { createContext, FC, useContext } from "react"
 import { RouteComponentProps } from "react-router"
 import { matchRoutes } from "react-router-config"
 import { Link, match } from "react-router-dom"
-import { Story, TBranchItem, TRouteConfig } from "story"
+import { IStory, TBranchItem, TRouteConfig } from "story"
 import { DataRoutes, TGetBranch, TReactRouterRouteConfig } from "story-react-router-5"
 import { DbClient, TArticle } from "./db"
 
@@ -13,8 +13,8 @@ type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
   route: TReactRouterRouteConfig & TAppRouteConfig
   abortController?: AbortController
 } & D
-export const StoryContext = createContext((null as any) as Story)
-function useStory(): Story {
+export const StoryContext = createContext((null as any) as IStory)
+function useStory(): IStory {
   return useContext(StoryContext)
 }
 
@@ -27,13 +27,13 @@ export const getBranch: TGetBranch = (routes, pathname) =>
     match: m.match,
   }))
 
-export const createBranchItemMapper = (story: Story, deps: TDeps) => (
+export const createBranchItemMapper = (story: IStory, deps: TDeps) => (
   branchItem: TAppBranchItem,
   abortController: AbortController
 ): [TLoadDataProps<{}>, TDeps] => [{ story, abortController, match: branchItem.match }, deps]
 
 type TLoadDataProps<M> = {
-  story: Story
+  story: IStory
   match: match<M>
   abortController: AbortController
 }
@@ -96,7 +96,11 @@ export const Layout: FC<TLayoutProps> = ({ route, year, articles }) => {
         </div>
       </header>
       <main style={{ marginBottom: "1000px" }}>
-        {story.is404 ? <NotFound /> : <DataRoutes routes={route.routes} story={story} />}
+        {story.state.statusCode === 404 ? (
+          <NotFound />
+        ) : (
+          <DataRoutes routes={route.routes} story={story} />
+        )}
       </main>
       <div id="hash1" style={{ marginBottom: "1000px" }}>
         hash1
@@ -161,7 +165,7 @@ const articleLoader: TLoadData<TArticleData | null, TArticleMatchParams> = async
   console.log("articleLoader", match.params.slug)
   const article = await apiSdk.getArticle(match.params.slug, abortController.signal)
   if (!article) {
-    story.set404()
+    story.setStatus(404)
     return null
   }
   return { article }
