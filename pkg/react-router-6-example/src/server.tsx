@@ -5,9 +5,9 @@ import React from "react"
 import { renderToString } from "react-dom/server"
 import { Router } from "react-router"
 import { createStory } from "story"
-import { DataRoutes } from "story-react-router-5"
 import {
   createBranchItemMapper,
+  DataRoutes,
   getBranch,
   routes,
   StoryContext,
