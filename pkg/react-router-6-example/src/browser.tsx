@@ -2,7 +2,7 @@ import { BrowserHistory, createBrowserHistory, Location } from "history"
 import React, { FC, useEffect, useState } from "react"
 import { render } from "react-dom"
 import { Router } from "react-router"
-import { createStory, IStory } from "story"
+import { createStory } from "story"
 import {
   createBranchItemMapper,
   DataRoutes,
@@ -14,14 +14,14 @@ import {
 } from "./app"
 import { DbClient } from "./db"
 
-const Browser: FC<{ history: BrowserHistory; story: IStory }> = ({ history, story }) => {
+const Browser: FC<{ history: BrowserHistory; story: TAppStory }> = ({ history, story }) => {
   const [, set_render_location] = useState(story.state.location)
 
   useEffect(() => {
     history.listen(async ({ location, action }) => {
       story.abortLoading()
       const branch = getBranch(routes, location.pathname)
-      await story.loadData(branch, location.pathname, action === "PUSH")
+      await story.loadData(branch, location, action === "PUSH")
       set_render_location(location)
     })
   }, [])

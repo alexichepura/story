@@ -10,7 +10,7 @@ export type TAppStory = IStory<Location>
 export type TGetBranch<T = RouteObject> = (routes: T[], pathname: string) => TBranchItem[]
 type TDataRoutesProps = {
   routes: TAppRouteConfig[]
-  story: IStory
+  story: TAppStory
 }
 export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
   return (
