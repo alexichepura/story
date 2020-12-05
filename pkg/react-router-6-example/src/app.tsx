@@ -1,6 +1,6 @@
 import { Location } from "history"
-import React, { createContext, FC, useContext } from "react"
-import { matchRoutes, Outlet, RouteMatch, RouteObject, useRoutes } from "react-router"
+import React, { createContext, createElement, FC, useContext } from "react"
+import { matchRoutes, Outlet, Route, RouteMatch, RouteObject, Routes } from "react-router"
 import { Link } from "react-router-dom"
 import { IStory, TBranchItem } from "story"
 import { DbClient, TArticle } from "./db"
@@ -9,13 +9,38 @@ export type TAppStory = IStory<Location>
 
 export type TGetBranch<T = RouteObject> = (routes: T[], pathname: string) => TBranchItem[]
 type TDataRoutesProps = {
-  routes: RouteObject[]
+  routes: TAppRouteConfig[]
   story: IStory
 }
 export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
-  console.log("DataRoutes", routes.length, story.state.location)
-  const element = useRoutes(routes)
-  return element
+  return (
+    <Routes>
+      {routes.map((route) => {
+        const key = route.dataKey && story.state.keys[route.dataKey]
+        const data = key && story.data[key]
+        return (
+          <Route
+            key={key}
+            path={route.path}
+            caseSensitive={route.caseSensitive}
+            element={
+              <RouteCtx.Provider
+                value={{ data, route: route, abortController: story.state.abortController }}
+              >
+                {route.element}
+              </RouteCtx.Provider>
+            }
+          />
+        )
+      })}
+    </Routes>
+  )
+}
+type TRouteCtx = { data: any; route: TAppRouteConfig; abortController?: AbortController }
+const RouteCtx = React.createContext<TRouteCtx>((null as any) as TRouteCtx)
+const RouteWrapper: FC<{ el: React.ComponentType<any> }> = ({ el }) => {
+  const ctx = useContext(RouteCtx)
+  return createElement(el, { route: ctx.route, abortController: ctx.abortController, ...ctx.data })
 }
 
 type TAppRouteConfig = RouteObject & {
@@ -218,43 +243,43 @@ export const NotFound: FC = () => (
 export const routes: TAppRouteConfig[] = [
   {
     path: "/*",
-    caseSensitive: false,
-    element: Layout,
+    caseSensitive: true,
+    element: <RouteWrapper el={Layout} />,
     dataKey: "layout",
     loadData: layoutLoader,
     children: [
       {
         path: "/",
-        caseSensitive: false,
-        element: Home,
+        caseSensitive: true,
+        element: <RouteWrapper el={Home} />,
         dataKey: "home",
         loadData: homeLoader,
       },
       {
         path: "/long-loading",
-        caseSensitive: false,
-        element: LongLoading,
+        caseSensitive: true,
+        element: <RouteWrapper el={LongLoading} />,
         dataKey: "longLoading",
         loadData: longLoadingLoader,
       },
       {
         path: "/subarticle/:slug",
-        caseSensitive: false,
-        element: Article,
+        caseSensitive: true,
+        element: <RouteWrapper el={Article} />,
         dataKey: "subarticle",
         loadData: articleLoader,
       },
       {
         path: "/:slug",
-        caseSensitive: false,
-        element: Article,
+        caseSensitive: true,
+        element: <RouteWrapper el={Article} />,
         dataKey: "article",
         loadData: articleLoader,
       },
       {
         path: "/*",
-        caseSensitive: false,
-        element: NotFound,
+        caseSensitive: true,
+        element: <RouteWrapper el={NotFound} />,
         dataKey: "404",
         loadData: async ({ story }) => story.setStatus(404),
       },
