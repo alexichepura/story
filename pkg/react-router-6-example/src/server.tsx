@@ -1,13 +1,13 @@
 require("dotenv").config()
-import { createLocation } from "history"
+import { createMemoryHistory, Location } from "history"
 import { createServer } from "http"
 import React from "react"
 import { renderToString } from "react-dom/server"
-import { StaticRouter } from "react-router"
+import { Router } from "react-router"
 import { createStory } from "story"
-import { DataRoutes } from "story-react-router-5"
 import {
   createBranchItemMapper,
+  DataRoutes,
   getBranch,
   routes,
   StoryContext,
@@ -35,13 +35,19 @@ const server = createServer(async (request, response) => {
           console.log("onLoadError", err)
         },
       })
-      const location = createLocation(pathname)
-      await story.loadData(getBranch(routes, pathname), location)
+      await story.loadData(getBranch(routes, pathname), {
+        pathname,
+        state: {},
+        key: "",
+        search: "",
+        hash: "",
+      })
+      const history = createMemoryHistory({ initialEntries: [story.state.location.pathname] })
       const html = renderToString(
         <StoryContext.Provider value={story}>
-          <StaticRouter location={story.state.location}>
+          <Router navigator={history} location={story.state.location as Location<{}>}>
             <DataRoutes routes={routes} story={story} />
-          </StaticRouter>
+          </Router>
         </StoryContext.Provider>
       )
       const { statusCode } = story.state

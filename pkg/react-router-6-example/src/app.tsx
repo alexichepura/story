@@ -1,34 +1,70 @@
 import { Location } from "history"
-import React, { createContext, FC, useContext } from "react"
-import { RouteComponentProps } from "react-router"
-import { matchRoutes, RouteConfig } from "react-router-config"
-import { Link, match } from "react-router-dom"
+import React, { createContext, createElement, FC, useContext } from "react"
+import { matchRoutes, Route, RouteMatch, RouteObject, Routes } from "react-router"
+import { Link } from "react-router-dom"
 import { IStory, TBranchItem } from "story"
-import { DataRoutes, TGetBranch } from "story-react-router-5"
 import { DbClient, TArticle } from "./db"
 
 export type TAppStory = IStory<Location>
 
-type TAppRouteConfig = RouteConfig & {
-  routes?: TAppRouteConfig[]
+export type TGetBranch<T = RouteObject> = (routes: T[], pathname: string) => TBranchItem[]
+type TDataRoutesProps = {
+  routes: TAppRouteConfig[]
+  story: TAppStory
+}
+export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
+  return (
+    <Routes>
+      {routes.map((route) => {
+        const key = route.dataKey && story.state.keys[route.dataKey]
+        const data = key && story.data[key]
+        return (
+          <Route
+            key={route.dataKey + "!" + key}
+            path={route.path}
+            caseSensitive={route.caseSensitive}
+            element={
+              <RouteCtx.Provider
+                value={{ data, route: route, abortController: story.state.abortController }}
+              >
+                {route.element}
+              </RouteCtx.Provider>
+            }
+          />
+        )
+      })}
+    </Routes>
+  )
+}
+type TRouteCtx = { data: any; route: TAppRouteConfig; abortController?: AbortController }
+const RouteCtx = React.createContext<TRouteCtx>((null as any) as TRouteCtx)
+const RouteWrapper: FC<{ el: React.ComponentType<any> }> = ({ el }) => {
+  const ctx = useContext(RouteCtx)
+  return createElement(el, { route: ctx.route, abortController: ctx.abortController, ...ctx.data })
+}
+
+type TAppRouteConfig = RouteObject & {
+  children?: TAppRouteConfig[]
   dataKey?: string
   loadData?: TLoadData<any>
 }
+type TRouteMatch = RouteMatch & { route: TAppRouteConfig }
 
 export const StoryContext = createContext((null as any) as TAppStory)
 function useStory(): TAppStory {
   return useContext(StoryContext)
 }
 
-export type TAppBranchItem = TBranchItem & { match: match }
+export type TAppBranchItem = TBranchItem & { match: TRouteMatch }
 
 export const getBranch: TGetBranch<TAppRouteConfig> = (routes, pathname) => {
-  const items = matchRoutes(routes, pathname).map((m) => {
+  const matches: TRouteMatch[] = matchRoutes(routes, pathname) || []
+  const items = matches.map((m) => {
     const branchItem: TAppBranchItem = {
+      url: m.pathname,
       load: m.route.loadData,
-      url: m.match.url,
       key: m.route.dataKey,
-      match: m.match,
+      match: m,
     }
     return branchItem
   })
@@ -44,7 +80,7 @@ export const createBranchItemMapper = (story: TAppStory, deps: TDeps) => (
 
 type TLoadDataProps<M> = {
   story: TAppStory
-  match: match<M>
+  match: RouteMatch & { params: M }
   abortController: AbortController
 }
 type TLocationData = Record<string, any>
@@ -58,8 +94,8 @@ export type TDeps = { apiSdk: DbClient }
 type TLoadData<T, M = any> = TStoryLoadData<T, M, TDeps>
 
 const link_style: React.CSSProperties = { marginLeft: "1rem" }
-type TRouteComponentProps<D, P = any> = RouteComponentProps<P> & {
-  route: TAppRouteConfig & TAppRouteConfig
+type TRouteComponentProps<D> = {
+  route: TAppRouteConfig
   abortController?: AbortController
 } & D
 // LAYOUT
@@ -68,11 +104,8 @@ type TLayoutData = {
   articles: TArticle[]
 }
 type TLayoutProps = TRouteComponentProps<TLayoutData>
-export const Layout: FC<TLayoutProps> = ({ route, year, articles }) => {
+export const Layout: FC<TLayoutProps> = ({ year, articles, route }) => {
   const story = useStory()
-  if (!route.routes) {
-    throw new Error("no routes")
-  }
   return (
     <div>
       <header>
@@ -112,7 +145,7 @@ export const Layout: FC<TLayoutProps> = ({ route, year, articles }) => {
         {story.state.statusCode === 404 ? (
           <NotFound />
         ) : (
-          <DataRoutes routes={route.routes} story={story} />
+          <DataRoutes routes={route.children!} story={story} />
         )}
       </main>
       <div id="hash1" style={{ marginBottom: "1000px" }}>
@@ -158,7 +191,7 @@ const homeLoader: TLoadData<THomeData> = async ({ abortController }, { apiSdk })
 
 // ARTICLE
 type TArticleMatchParams = { slug: string }
-type TArticleProps = TRouteComponentProps<TArticleData, TArticleMatchParams>
+type TArticleProps = TRouteComponentProps<TArticleData>
 type TArticleData = {
   article: TArticle
 }
@@ -213,41 +246,44 @@ export const NotFound: FC = () => (
 
 export const routes: TAppRouteConfig[] = [
   {
-    component: Layout as FC,
+    path: "/*",
+    caseSensitive: true,
+    element: <RouteWrapper el={Layout} />,
     dataKey: "layout",
     loadData: layoutLoader,
-    routes: [
+    children: [
       {
         path: "/",
-        exact: true,
-        component: Home as FC,
+        caseSensitive: true,
+        element: <RouteWrapper el={Home} />,
         dataKey: "home",
         loadData: homeLoader,
       },
       {
         path: "/long-loading",
-        exact: true,
-        component: LongLoading as FC,
+        caseSensitive: true,
+        element: <RouteWrapper el={LongLoading} />,
         dataKey: "longLoading",
         loadData: longLoadingLoader,
       },
       {
         path: "/subarticle/:slug",
-        component: Article as FC,
-        exact: true,
+        caseSensitive: true,
+        element: <RouteWrapper el={Article} />,
         dataKey: "subarticle",
         loadData: articleLoader,
       },
       {
         path: "/:slug",
-        component: Article as FC,
-        exact: true,
+        caseSensitive: true,
+        element: <RouteWrapper el={Article} />,
         dataKey: "article",
         loadData: articleLoader,
       },
       {
-        component: NotFound as FC,
         path: "/*",
+        caseSensitive: true,
+        element: <RouteWrapper el={NotFound} />,
         dataKey: "404",
         loadData: async ({ story }) => story.setStatus(404),
       },

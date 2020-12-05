@@ -1,19 +1,17 @@
-import { Action, createLocation, Location } from "history"
-
-export type TRouteConfig = {
-  loadData?: (...args: any) => Promise<any>
-  dataKey?: string
-  routes?: TRouteConfig[]
-}
+export type TLoadData = (...args: any | undefined) => Promise<any>
+export type TDataKey = string
 
 export type TStatusCode = number
-export type TBranchItem = { route: TRouteConfig; matchUrl: string }
+export interface TBranchItem {
+  key?: TDataKey
+  load?: TLoadData
+  url: string
+}
 
+type TLocation = any
 export type TState = {
-  pathname: string
-  matches: TBranchItem[]
   abortController?: AbortController
-  location: Location
+  location: TLocation
   loading: boolean
   statusCode: TStatusCode
   keys: Record<string, string>
@@ -21,122 +19,120 @@ export type TState = {
 export type TStates = TState[]
 
 type TBranchItemsMapper = (branchItem: TBranchItem, abortController: AbortController) => any
-
+type TData = Record<string, any>
 type TStoryProps = {
-  data?: Record<string, any>
+  data?: TData
   statusCode?: TStatusCode
   branchItemsMapper: TBranchItemsMapper
-  onLoadError?: (err: Error) => void
+  onLoadError: (err: Error) => void
+}
+export interface IStory<L = TLocation> {
+  abortLoading: () => void
+  setStatus: (statusCode: TStatusCode) => void
+  loadData: (branch: TBranchItem[], location: L, push?: boolean) => Promise<boolean>
+  loading: boolean
+  state: TState
+  data: TData
 }
 
-export class Story {
-  onLoadError: (err: Error) => void = (err) => {
-    throw err
+export function createStory<L = TLocation>(props: TStoryProps): IStory<L> {
+  let I: number = -1
+  const maxStates = 2
+  const states: TStates = []
+  const data: TData = props.data || {}
+
+  function merge(i: number, state: Partial<TState>) {
+    states[i] = { ...(states[i] || {}), ...state }
   }
-  branchItemsMapper: TBranchItemsMapper
-  get loading(): boolean {
-    return this.states.some((state) => state.loading)
-  }
-  maxStates = 2
-  states: TStates = []
-  private i: number = -1
-  data: Record<string, any> = {}
-  get state(): TState {
-    return this.states[this.i]
-  }
-  get is404(): boolean {
-    return this.state.statusCode === 404
+  if (props.statusCode) {
+    merge(0, { statusCode: props.statusCode })
   }
 
-  constructor(props: TStoryProps) {
-    this.branchItemsMapper = props.branchItemsMapper
-    if (props.onLoadError) {
-      this.onLoadError = props.onLoadError
-    }
-    if (props.data) {
-      this.data = props.data
-    }
-    if (props.statusCode) {
-      this.merge(0, { statusCode: props.statusCode })
-    }
-  }
+  return {
+    loadData: async (branch, location, push) => {
+      const i = I + 1
+      const abortController =
+        "AbortController" in global
+          ? new AbortController()
+          : ({ signal: { aborted: false } } as AbortController)
 
-  private merge(i: number, state: Partial<TState>) {
-    this.states[i] = { ...(this.states[i] || {}), ...state }
-  }
+      const keys = branch.reduce<Record<string, string>>((p, c) => {
+        if (c.key) {
+          const key = getKey(c.key, c.url)
+          if (key) {
+            p[c.key] = key
+          }
+        }
+        return p
+      }, {})
 
-  loadData = async (branch: TBranchItem[], pathname: string, action?: Action): Promise<boolean> => {
-    const location = createLocation(pathname)
-    const i = this.i + 1
-    const abortController =
-      "AbortController" in global
-        ? new AbortController()
-        : ({ signal: { aborted: false } } as AbortController)
-
-    const keys = getBranchKeys(branch)
-
-    if (i === 0) {
-      this.merge(0, { location, keys })
-    }
-    const diffedMatches = branch.filter((branchItem) => {
-      const key = getKey(branchItem.route.dataKey, branchItem.matchUrl)
-      const data = key ? this.data[key] : null
-      return (
-        !data ||
-        (action === "PUSH" &&
-          branchItem.route.dataKey &&
-          this.state.keys[branchItem.route.dataKey] !== keys[branchItem.route.dataKey])
-      )
-    })
-    this.merge(i, {
-      keys,
-      location,
-      pathname,
-      abortController,
-      loading: true,
-    })
-
-    try {
-      const [loadedData] = await Promise.all([
-        loadBranchDataObject(diffedMatches, (branchItem) => {
-          return this.branchItemsMapper(branchItem, abortController)
-        }),
-        // loadBranchComponents(branch),
-      ])
-      Object.entries(loadedData).forEach(([key, matchData]) => {
-        this.data[key] = matchData
-      })
-    } catch (err) {
-      if (err.name === "AbortError") {
-        // request was aborted, so we don't care about this error
-      } else {
-        this.onLoadError(err)
+      if (i === 0) {
+        merge(0, { location, keys })
       }
-      return false
-    }
+      const diff = branch.filter((branchItem) => {
+        const key = getKey(branchItem.key, branchItem.url)
+        const _data = key ? data[key] : null
+        return (
+          !_data ||
+          (push && branchItem.key && states[I].keys[branchItem.key] !== keys[branchItem.key])
+        )
+      })
 
-    this.merge(i, {
-      loading: false,
-      statusCode: this.states[i].statusCode || 200,
-    })
-    this.i = i
-    if (this.states.length > this.maxStates) {
-      this.states.splice(0, this.states.length - this.maxStates)
-      this.i = this.maxStates - 1
-    }
-    return true
-  }
-  abortLoading() {
-    this.states.forEach((state) => {
-      state.abortController?.abort()
-      state.loading = false
-    })
-  }
-  setStatus(statusCode: TStatusCode) {
-    this.states[this.i + 1].statusCode = statusCode
-  }
-  set404 = (): void => {
-    this.setStatus(404)
+      merge(i, {
+        keys,
+        location,
+        abortController,
+        loading: true,
+      })
+
+      try {
+        const [loadedData] = await Promise.all([
+          loadBranchDataObject(diff, (branchItem) => {
+            return props.branchItemsMapper(branchItem, abortController)
+          }),
+          // loadBranchComponents(branch),
+        ])
+        Object.entries(loadedData).forEach(([key, matchData]) => {
+          data[key] = matchData
+        })
+      } catch (err) {
+        if (err.name === "AbortError") {
+          // request was aborted, so we don't care about this error
+        } else {
+          props.onLoadError(err)
+        }
+        return false
+      }
+
+      merge(i, {
+        loading: false,
+        statusCode: states[i].statusCode || 200,
+      })
+      I = i
+      if (states.length > maxStates) {
+        states.splice(0, states.length - maxStates)
+        I = maxStates - 1
+      }
+      return true
+    },
+    abortLoading: () => {
+      states.forEach((state) => {
+        state.abortController?.abort()
+        state.loading = false
+      })
+    },
+    setStatus: (statusCode) => {
+      states[I + 1].statusCode = statusCode
+    },
+    get loading() {
+      return states.some((state) => state.loading)
+    },
+    get state() {
+      return states[I]
+    },
+    get data() {
+      return data
+    },
   }
 }
 
@@ -147,17 +143,17 @@ type TPromiseConfig = {
 
 type TLoadDataResult = any
 export async function loadBranchDataObject(
-  branches: TBranchItem[],
+  branch: TBranchItem[],
   branchItemsMapper: (branchItem: TBranchItem) => any[]
 ): Promise<TLoadDataResult> {
-  const promisesConfig: TPromiseConfig[] = branches
+  const promisesConfig: TPromiseConfig[] = branch
     .map(
       (branchItem: TBranchItem): TPromiseConfig => {
-        if (branchItem.route.loadData) {
+        if (branchItem.load) {
           const loaderArgs = branchItemsMapper(branchItem)
           return {
-            dataKey: getKey(branchItem.route.dataKey, branchItem.matchUrl) || "",
-            promise: branchItem.route.loadData(...loaderArgs),
+            dataKey: getKey(branchItem.key, branchItem.url) || "",
+            promise: branchItem.load(...loaderArgs),
           }
         }
         return Promise.resolve(null) as any
@@ -173,16 +169,5 @@ export async function loadBranchDataObject(
   return resultsObject
 }
 
-export const getKey = (k1: string | undefined, k2: string | undefined): string | undefined =>
+const getKey = (k1: string | undefined, k2: string | undefined): string | undefined =>
   k1 && k2 ? k1 + ":" + k2 : undefined
-
-export const getBranchKeys = (matches: TBranchItem[]) =>
-  matches.reduce<Record<string, string>>((p, c) => {
-    if (c.route.dataKey) {
-      const key = getKey(c.route.dataKey, c.matchUrl)
-      if (key) {
-        p[c.route.dataKey] = key
-      }
-    }
-    return p
-  }, {})

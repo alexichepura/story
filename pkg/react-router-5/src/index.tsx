@@ -1,17 +1,15 @@
 import React, { FC, useEffect, useState } from "react"
 import { Route, Switch, useHistory } from "react-router"
 import { RouteConfig } from "react-router-config"
-import { Story, TBranchItem, TRouteConfig } from "story"
+import { IStory, TBranchItem } from "story"
 
-export type TReactRouterRouteConfig = RouteConfig & TRouteConfig
-export type TGetBranch = (routes: TRouteConfig[], pathname: string) => TBranchItem[]
+export type TGetBranch<T = RouteConfig> = (routes: T[], pathname: string) => TBranchItem[]
 
 type TDataRoutesProps = {
-  routes: TReactRouterRouteConfig[]
-  story: Story
+  routes: RouteConfig[]
+  story: IStory
 }
 export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
-  console.log("DataRoutes", routes.length, story.state.location)
   return (
     <Switch>
       {routes.map((route, i) => {
@@ -41,7 +39,7 @@ export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
   )
 }
 
-const usePreloader = (story: Story, routes: TReactRouterRouteConfig[], getBranch: TGetBranch) => {
+const usePreloader = (story: IStory, routes: RouteConfig[], getBranch: TGetBranch) => {
   const history = useHistory()
   const [, set_render_location] = useState(story.state.location)
 
@@ -49,7 +47,7 @@ const usePreloader = (story: Story, routes: TReactRouterRouteConfig[], getBranch
     history.listen(async (new_location, action) => {
       story.abortLoading()
       const branch = getBranch(routes, new_location.pathname)
-      await story.loadData(branch, new_location.pathname, action)
+      await story.loadData(branch, new_location.pathname, action === "PUSH")
       set_render_location(new_location)
     })
   }, [])
@@ -58,8 +56,8 @@ const usePreloader = (story: Story, routes: TReactRouterRouteConfig[], getBranch
 }
 
 export const Preloader: FC<{
-  story: Story
-  routes: TReactRouterRouteConfig[]
+  story: IStory
+  routes: RouteConfig[]
   getBranch: TGetBranch
 }> = ({ children, story, routes, getBranch }) => {
   const render_location = usePreloader(story, routes, getBranch)
