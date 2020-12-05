@@ -1,76 +1,61 @@
+import { Location } from "history"
 import React, { createContext, FC, useContext } from "react"
-import { matchRoutes, Outlet, PartialRouteObject, useRoutes } from "react-router"
+import { matchRoutes, Outlet, RouteMatch, RouteObject, useRoutes } from "react-router"
 import { Link } from "react-router-dom"
-import { Story, TBranchItem, TRouteConfig } from "story"
+import { IStory, TBranchItem } from "story"
 import { DbClient, TArticle } from "./db"
 
-export type TReactRouterRouteConfig = PartialRouteObject & TRouteConfig
-export type TGetBranch = (routes: TRouteConfig[], pathname: string) => TBranchItem[]
+export type TAppStory = IStory<Location>
 
+export type TGetBranch<T = RouteObject> = (routes: T[], pathname: string) => TBranchItem[]
 type TDataRoutesProps = {
-  routes: TReactRouterRouteConfig[]
-  story: Story
+  routes: RouteObject[]
+  story: IStory
 }
 export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
   console.log("DataRoutes", routes.length, story.state.location)
   const element = useRoutes(routes)
   return element
-  // return (
-  //   <Routes>
-  //     {routes.map((route, i) => {
-  //       const key = route.dataKey && story.state.keys[route.dataKey]
-  //       const data = key && story.data[key]
-  //       return (
-  //         <Route
-  //           key={route.key || i}
-  //           path={route.path}
-  //           render={(_props) => {
-  //             const props = {
-  //               ..._props,
-  //               ...data,
-  //               route: route,
-  //               abortController: story.state.abortController,
-  //             }
-  //             return route.render
-  //               ? route.render(props)
-  //               : route.component && <route.component {...props} />
-  //           }}
-  //         />
-  //       )
-  //     })}
-  //   </Routes>
-  // )
 }
 
-type TAppRouteConfig = TRouteConfig & {
-  routes?: TAppRouteConfig[]
+type TAppRouteConfig = RouteObject & {
+  children?: TAppRouteConfig[]
+  dataKey?: string
+  loadData?: TLoadData<any>
 }
-type TRouteComponentProps<D> = {
-  route: TReactRouterRouteConfig & TAppRouteConfig
-  abortController?: AbortController
-} & D
-export const StoryContext = createContext((null as any) as Story)
-function useStory(): Story {
+type TRouteMatch = RouteMatch & { route: TAppRouteConfig }
+
+export const StoryContext = createContext((null as any) as TAppStory)
+function useStory(): TAppStory {
   return useContext(StoryContext)
 }
 
-export type TAppBranchItem = TBranchItem & { match: match }
+export type TAppBranchItem = TBranchItem & { match: TRouteMatch }
 
-export const getBranch: TGetBranch = (routes, pathname) =>
-  matchRoutes(routes, pathname).map((m) => ({
-    route: m.route,
-    matchUrl: m.match.url,
-    match: m.match,
-  }))
+export const getBranch: TGetBranch<TAppRouteConfig> = (routes, pathname) => {
+  const matches: TRouteMatch[] = matchRoutes(routes, pathname) || []
+  const items = matches.map((m) => {
+    const branchItem: TAppBranchItem = {
+      url: m.pathname,
+      load: m.route.loadData,
+      key: m.route.dataKey,
+      match: m,
+    }
+    return branchItem
+  })
+  return items
+}
 
-export const createBranchItemMapper = (story: Story, deps: TDeps) => (
+export const createBranchItemMapper = (story: TAppStory, deps: TDeps) => (
   branchItem: TAppBranchItem,
   abortController: AbortController
-): [TLoadDataProps<{}>, TDeps] => [{ story, abortController, match: branchItem.match }, deps]
+): [TLoadDataProps<{}>, TDeps] => {
+  return [{ story, abortController, match: branchItem.match }, deps]
+}
 
 type TLoadDataProps<M> = {
-  story: Story
-  match: match<M>
+  story: TAppStory
+  match: RouteMatch & { params: M }
   abortController: AbortController
 }
 type TLocationData = Record<string, any>
@@ -84,7 +69,10 @@ export type TDeps = { apiSdk: DbClient }
 type TLoadData<T, M = any> = TStoryLoadData<T, M, TDeps>
 
 const link_style: React.CSSProperties = { marginLeft: "1rem" }
-
+type TRouteComponentProps<D> = {
+  route: TAppRouteConfig
+  abortController?: AbortController
+} & D
 // LAYOUT
 type TLayoutData = {
   year: number
@@ -129,7 +117,7 @@ export const Layout: FC<TLayoutProps> = ({ year, articles }) => {
         </div>
       </header>
       <main style={{ marginBottom: "1000px" }}>
-        <Outlet />
+        {story.state.statusCode === 404 ? <NotFound /> : <Outlet />}
       </main>
       <div id="hash1" style={{ marginBottom: "1000px" }}>
         hash1
@@ -194,7 +182,7 @@ const articleLoader: TLoadData<TArticleData | null, TArticleMatchParams> = async
   console.log("articleLoader", match.params.slug)
   const article = await apiSdk.getArticle(match.params.slug, abortController.signal)
   if (!article) {
-    story.set404()
+    story.setStatus(404)
     return null
   }
   return { article }
@@ -227,43 +215,48 @@ export const NotFound: FC = () => (
   </div>
 )
 
-export const routes: TReactRouterRouteConfig[] = [
+export const routes: TAppRouteConfig[] = [
   {
+    path: "/*",
+    caseSensitive: false,
     element: Layout,
     dataKey: "layout",
     loadData: layoutLoader,
     children: [
       {
         path: "/",
+        caseSensitive: false,
         element: Home,
         dataKey: "home",
         loadData: homeLoader,
       },
       {
         path: "/long-loading",
+        caseSensitive: false,
         element: LongLoading,
         dataKey: "longLoading",
         loadData: longLoadingLoader,
       },
       {
         path: "/subarticle/:slug",
+        caseSensitive: false,
         element: Article,
-        exact: true,
         dataKey: "subarticle",
         loadData: articleLoader,
       },
       {
         path: "/:slug",
+        caseSensitive: false,
         element: Article,
-        exact: true,
         dataKey: "article",
         loadData: articleLoader,
       },
       {
-        element: NotFound,
         path: "/*",
+        caseSensitive: false,
+        element: NotFound,
         dataKey: "404",
-        loadData: async ({ story }) => story.set404(),
+        loadData: async ({ story }) => story.setStatus(404),
       },
     ],
   },

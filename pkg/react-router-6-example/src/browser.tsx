@@ -2,7 +2,7 @@ import { BrowserHistory, createBrowserHistory, Location } from "history"
 import React, { FC, useEffect, useState } from "react"
 import { render } from "react-dom"
 import { Router } from "react-router"
-import { Story } from "story"
+import { createStory, IStory } from "story"
 import {
   createBranchItemMapper,
   DataRoutes,
@@ -10,10 +10,11 @@ import {
   routes,
   StoryContext,
   TAppBranchItem,
+  TAppStory,
 } from "./app"
 import { DbClient } from "./db"
 
-const Browser: FC<{ history: BrowserHistory; story: Story }> = ({ history, story }) => {
+const Browser: FC<{ history: BrowserHistory; story: IStory }> = ({ history, story }) => {
   const [, set_render_location] = useState(story.state.location)
 
   useEffect(() => {
@@ -35,7 +36,7 @@ const Browser: FC<{ history: BrowserHistory; story: Story }> = ({ history, story
 const init = async () => {
   const history = createBrowserHistory()
   const deps = { apiSdk: new DbClient() }
-  const story: Story = new Story({
+  const story: TAppStory = createStory({
     branchItemsMapper: (branchItem, abortController) =>
       createBranchItemMapper(story, deps)(branchItem as TAppBranchItem, abortController),
     data: window.ssr_data,
@@ -44,8 +45,8 @@ const init = async () => {
       console.log("onLoadError", err)
     },
   })
-  const { pathname } = history.location
-  await story.loadData(getBranch(routes, pathname), pathname)
+
+  await story.loadData(getBranch(routes, history.location.pathname), history.location)
   const el = document.getElementById("app")
   render(
     <StoryContext.Provider value={story}>

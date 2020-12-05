@@ -4,14 +4,15 @@ import { createServer } from "http"
 import React from "react"
 import { renderToString } from "react-dom/server"
 import { Router } from "react-router"
-import { Story } from "story"
+import { createStory } from "story"
+import { DataRoutes } from "story-react-router-5"
 import {
   createBranchItemMapper,
-  DataRoutes,
   getBranch,
   routes,
   StoryContext,
   TAppBranchItem,
+  TAppStory,
 } from "./app"
 import { DbClient } from "./db"
 import { env } from "./env"
@@ -26,13 +27,21 @@ const server = createServer(async (request, response) => {
       response.end(template({ html: "", data: null, statusCode: 200 }))
     } else {
       const deps = { apiSdk: new DbClient() }
-      const story: Story = new Story({
+      const story: TAppStory = createStory({
         branchItemsMapper: (branchItem, abortController) => {
           return createBranchItemMapper(story, deps)(branchItem as TAppBranchItem, abortController)
         },
+        onLoadError: (err) => {
+          console.log("onLoadError", err)
+        },
       })
-      await story.loadData(getBranch(routes, pathname), pathname)
-      console.log("server", story.state.location)
+      await story.loadData(getBranch(routes, pathname), {
+        pathname,
+        state: {},
+        key: "",
+        search: "",
+        hash: "",
+      })
       const history = createMemoryHistory({ initialEntries: [story.state.location.pathname] })
       const html = renderToString(
         <StoryContext.Provider value={story}>
