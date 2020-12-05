@@ -1,6 +1,6 @@
 import { Location } from "history"
 import React, { createContext, createElement, FC, useContext } from "react"
-import { matchRoutes, Outlet, Route, RouteMatch, RouteObject, Routes } from "react-router"
+import { matchRoutes, Route, RouteMatch, RouteObject, Routes } from "react-router"
 import { Link } from "react-router-dom"
 import { IStory, TBranchItem } from "story"
 import { DbClient, TArticle } from "./db"
@@ -20,7 +20,7 @@ export const DataRoutes: FC<TDataRoutesProps> = ({ routes, story }) => {
         const data = key && story.data[key]
         return (
           <Route
-            key={key}
+            key={route.dataKey + "!" + key}
             path={route.path}
             caseSensitive={route.caseSensitive}
             element={
@@ -104,7 +104,7 @@ type TLayoutData = {
   articles: TArticle[]
 }
 type TLayoutProps = TRouteComponentProps<TLayoutData>
-export const Layout: FC<TLayoutProps> = ({ year, articles }) => {
+export const Layout: FC<TLayoutProps> = ({ year, articles, route }) => {
   const story = useStory()
   return (
     <div>
@@ -142,7 +142,11 @@ export const Layout: FC<TLayoutProps> = ({ year, articles }) => {
         </div>
       </header>
       <main style={{ marginBottom: "1000px" }}>
-        {story.state.statusCode === 404 ? <NotFound /> : <Outlet />}
+        {story.state.statusCode === 404 ? (
+          <NotFound />
+        ) : (
+          <DataRoutes routes={route.children!} story={story} />
+        )}
       </main>
       <div id="hash1" style={{ marginBottom: "1000px" }}>
         hash1
