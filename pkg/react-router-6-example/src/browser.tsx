@@ -3,16 +3,16 @@ import React, { FC, useEffect, useState } from "react"
 import { render } from "react-dom"
 import { Router } from "react-router"
 import { createStory } from "story"
+import { routes } from "./app"
+import { DbClient } from "./db"
 import {
   createBranchItemMapper,
   DataRoutes,
   getBranch,
-  routes,
   StoryContext,
   TAppBranchItem,
   TAppStory,
-} from "./app"
-import { DbClient } from "./db"
+} from "./route"
 
 const Browser: FC<{ history: BrowserHistory; story: TAppStory }> = ({ history, story }) => {
   const [, set_render_location] = useState(story.state.location)
