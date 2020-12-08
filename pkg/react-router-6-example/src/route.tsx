@@ -79,7 +79,7 @@ export const createBranchItemMapper = (story: TAppStory, deps: TDeps) => (
 
 type TLoadDataProps<M> = {
   story: TAppStory
-  match: RouteMatch & { params: M }
+  match: { params: M }
   abortController: AbortController
 }
 type TLocationData = Record<string, any>
@@ -91,3 +91,7 @@ type TStoryLoadData<D, M, Deps> = (
 
 export type TDeps = { apiSdk: DbClient }
 export type TLoadData<T, M = any> = TStoryLoadData<T, M, TDeps>
+export type TRouteComponentProps<D> = {
+  route: TAppRouteConfig
+  abortController?: AbortController
+} & D

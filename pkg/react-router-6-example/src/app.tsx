@@ -1,13 +1,17 @@
 import React, { FC } from "react"
 import { Link } from "react-router-dom"
 import { TArticle } from "./db"
-import { DataRoutes, RouteWrapper, TAppRouteConfig, TLoadData, useStory } from "./route"
+import {
+  DataRoutes,
+  RouteWrapper,
+  TAppRouteConfig,
+  TLoadData,
+  TRouteComponentProps,
+  useStory,
+} from "./route"
 
 const link_style: React.CSSProperties = { marginLeft: "1rem" }
-type TRouteComponentProps<D> = {
-  route: TAppRouteConfig
-  abortController?: AbortController
-} & D
+
 // LAYOUT
 type TLayoutData = {
   year: number
