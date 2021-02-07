@@ -14,5 +14,5 @@ Story frontend microframework for universal SPAs with React. It requires static 
 - aborting data load using [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort) if switched to another route
 
 ## Usage
-[React Router 5](https://github.com/alexichepura/story/tree/master/pkg/react-router-5-example)
-[React Router 6](https://github.com/alexichepura/story/tree/master/pkg/react-router-6-example)
+- [with React Router 5](https://github.com/alexichepura/story/tree/master/pkg/react-router-5-example)
+- [with React Router 6](https://github.com/alexichepura/story/tree/master/pkg/react-router-6-example)
