@@ -12,8 +12,8 @@ Story frontend microframework for universal SPAs with React. It requires static 
 - data diff
 - scroll restoration
 - aborting data load using [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort) if switched to another route
-- Written in TypeScript
-- Zero dependencies
+- written in TypeScript
+- zero dependencies
 
 ## Examples
 - [react-router 5](https://github.com/alexichepura/story/tree/master/pkg/react-router-5-example)
