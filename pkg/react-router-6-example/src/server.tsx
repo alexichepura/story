@@ -1,12 +1,12 @@
 require("dotenv").config()
 import { createMemoryHistory, Location } from "history"
-import { createServer } from "http"
+import { createServer, IncomingMessage, ServerResponse } from "http"
 import React from "react"
 import { renderToString } from "react-dom/server"
 import { Router } from "react-router"
 import { createStory } from "story"
+import { serverApiClient, TApi } from "./api"
 import { routes } from "./app"
-import { DbClient } from "./db"
 import { env } from "./env"
 import {
   createBranchItemMapper,
@@ -19,14 +19,15 @@ import {
 
 const { DISABLE_SSR, PORT, WDS_PORT } = env
 
-const server = createServer(async (request, response) => {
+const server = createServer(async (req, res) => {
   try {
-    const pathname: string = request.url || ""
+    if (!(await apiMiddleware(req, res))) return
+    const pathname: string = req.url || ""
     if (DISABLE_SSR === "true") {
-      response.statusCode = 200
-      response.end(template({ html: "", data: null, statusCode: 200 }))
+      res.statusCode = 200
+      res.end(template({ html: "", data: null, statusCode: 200 }))
     } else {
-      const deps = { apiSdk: new DbClient() }
+      const deps = { apiSdk: serverApiClient }
       const story: TAppStory = createStory({
         branchItemsMapper: (branchItem, abortController) => {
           return createBranchItemMapper(story, deps)(branchItem as TAppBranchItem, abortController)
@@ -52,12 +53,13 @@ const server = createServer(async (request, response) => {
       )
       const { statusCode } = story.state
       const { data } = story
-      response.statusCode = statusCode
-      response.end(template({ html, data, statusCode }))
+      res.statusCode = statusCode
+      res.end(template({ html, data, statusCode }))
     }
   } catch (e) {
-    console.log(e)
-    response.end(e)
+    console.log("global error", e)
+    res.statusCode = 500
+    res.end(e)
   }
 })
 
@@ -92,3 +94,36 @@ const template = (props: TTemplateProps) => `
 </body>
 </html>
 `
+
+const apiMiddleware = async (req: IncomingMessage, res: ServerResponse): Promise<boolean> => {
+  const pathname: string = req.url || ""
+  if (!pathname.startsWith("/api/")) return true
+  const actionName = pathname.split("/api/")[1]
+  const action = serverApiClient[actionName as keyof TApi]
+  const json = await new Promise((resolve, _reject) => {
+    let body: Uint8Array[] = []
+    req
+      .on("data", (chunk) => {
+        console.log("chunk", chunk)
+        body.push(chunk)
+      })
+      .on("end", () => {
+        try {
+          const jsonString = Buffer.concat(body).toString()
+          resolve(JSON.parse(jsonString))
+        } catch (err) {
+          console.warn("WARNING res end:", err)
+          resolve({})
+        }
+      })
+      .on("error", (err) => {
+        console.warn("WARNING res data:", err)
+        resolve({})
+      })
+  })
+  const data = await action(null, json as any)
+  res.statusCode = 200
+  res.setHeader("Content-Type", "application/json")
+  res.end(JSON.stringify(data))
+  return false
+}

@@ -2,7 +2,7 @@ import { Location } from "history"
 import React, { createContext, createElement, FC, useContext } from "react"
 import { matchRoutes, Route, RouteMatch, RouteObject, Routes } from "react-router"
 import { IStory, TBranchItem } from "story"
-import { DbClient } from "./db"
+import { TApi } from "./api"
 
 export type TAppStory = IStory<Location>
 
@@ -89,7 +89,7 @@ type TStoryLoadData<D, M, Deps> = (
   deps: Deps
 ) => Promise<TLoadDataResult<D>>
 
-export type TDeps = { apiSdk: DbClient }
+export type TDeps = { apiSdk: TApi }
 export type TLoadData<T, M = any> = TStoryLoadData<T, M, TDeps>
 export type TRouteComponentProps<D> = {
   route: TAppRouteConfig

@@ -17,23 +17,31 @@ const articles: TArticle[] = [
   { slug: "article2", title: "Article 2", content: content2 },
 ]
 
-export class DbClient {
-  getYear = async (signal: AbortSignal) => {
+type TOptionalAbortSignal = AbortSignal | null | undefined
+export type TApi = {
+  getYear: (signal?: TOptionalAbortSignal) => Promise<number>
+  getArticle: (signal: TOptionalAbortSignal, vars: { slug: string }) => Promise<TArticle | null>
+  getArticles: (signal?: TOptionalAbortSignal) => Promise<TArticle[]>
+  getLongLoading: (signal?: TOptionalAbortSignal) => Promise<string>
+}
+
+export const serverApiClient: TApi = {
+  getYear: async (signal) => {
     await delayWithSignal(200, signal)
     return 2020
-  }
-  getArticle = async (slug: string, signal: AbortSignal) => {
+  },
+  getArticle: async (signal, vars) => {
     await delayWithSignal(1000, signal)
-    return articles.find((article) => article.slug === slug)
-  }
-  getArticles = async (signal: AbortSignal) => {
+    return articles.find((article) => article.slug === vars.slug) || null
+  },
+  getArticles: async (signal?: TOptionalAbortSignal) => {
     await delayWithSignal(400, signal)
     return articles
-  }
-  getLongLoading = async (signal: AbortSignal) => {
+  },
+  getLongLoading: async (signal?: TOptionalAbortSignal) => {
     await delayWithSignal(5000, signal)
     return "long loading data"
-  }
+  },
 }
 
 export const delay = (ms: number = 10): Promise<void> =>
@@ -43,8 +51,8 @@ export const delay = (ms: number = 10): Promise<void> =>
     }, ms)
   )
 
-function delayWithSignal(ms: number = 10, signal: AbortSignal) {
-  if (signal.aborted) {
+function delayWithSignal(ms: number = 10, signal?: AbortSignal | null) {
+  if (signal && signal.aborted) {
     return Promise.reject(new DOMException("Aborted", "AbortError"))
   }
 
@@ -56,8 +64,7 @@ function delayWithSignal(ms: number = 10, signal: AbortSignal) {
       console.log(`signal got "abort" event`, signal)
       clearTimeout(timeout)
       reject(new DOMException("Aborted", "AbortError"))
-      signal.removeEventListener("abort", once)
     }
-    signal.addEventListener("abort", once)
+    signal && signal.addEventListener("abort", once, { once: true })
   })
 }

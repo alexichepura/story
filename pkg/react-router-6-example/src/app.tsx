@@ -1,6 +1,6 @@
 import React, { FC } from "react"
 import { Link } from "react-router-dom"
-import { TArticle } from "./db"
+import { TArticle } from "./api"
 import {
   DataRoutes,
   RouteWrapper,
@@ -123,7 +123,7 @@ const articleLoader: TLoadData<TArticleData | null, TArticleMatchParams> = async
   { apiSdk }
 ) => {
   console.log("articleLoader", match.params.slug)
-  const article = await apiSdk.getArticle(match.params.slug, abortController.signal)
+  const article = await apiSdk.getArticle(abortController.signal, { slug: match.params.slug })
   if (!article) {
     story.setStatus(404)
     return null

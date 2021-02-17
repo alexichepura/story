@@ -3,8 +3,8 @@ import React, { FC, useEffect, useState } from "react"
 import { hydrate, render } from "react-dom"
 import { Router } from "react-router"
 import { createStory } from "story"
+import { TApi } from "./api"
 import { routes } from "./app"
-import { DbClient } from "./db"
 import {
   createBranchItemMapper,
   DataRoutes,
@@ -13,6 +13,23 @@ import {
   TAppBranchItem,
   TAppStory,
 } from "./route"
+
+const api = new Proxy({} as TApi, {
+  get: function (_target, name: keyof TApi, _receiver) {
+    return async (signal?: AbortSignal, variables?: any) => {
+      const url = "/api/" + name
+      const result = await fetch(url, {
+        method: "POST",
+        body: variables && JSON.stringify(variables),
+        signal,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+        },
+      })
+      return await result.json()
+    }
+  },
+})
 
 const Browser: FC<{ history: BrowserHistory; story: TAppStory }> = ({ history, story }) => {
   const [, set_render_location] = useState(story.state.location)
@@ -37,7 +54,7 @@ const Browser: FC<{ history: BrowserHistory; story: TAppStory }> = ({ history, s
 
 const init = async () => {
   const history = createBrowserHistory()
-  const deps = { apiSdk: new DbClient() }
+  const deps = { apiSdk: api }
   const story: TAppStory = createStory({
     branchItemsMapper: (branchItem, abortController) =>
       createBranchItemMapper(story, deps)(branchItem as TAppBranchItem, abortController),
