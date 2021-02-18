@@ -5,6 +5,7 @@
     "@types/node": "^14.14.10",
     "@types/react-dom": "^16.9.8",
     "dotenv": "^8.2.0",
+    "dotenv-cli": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^6.0.5",
     "ts-loader": "^8.0.11",
     "ts-node": "^9.0.0",
@@ -20,7 +21,8 @@
     "react-dom": "^16.13.1",
     "react-router": "6.0.0-beta.0",
     "react-router-dom": "6.0.0-beta.0",
-    "tslib": "^2.0.3"
+    "tslib": "^2.0.3",
+    "story": "0.2.0"
   },
   "license": "MIT",
   "name": "story-react-router-6-example",
