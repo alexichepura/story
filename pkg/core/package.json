@@ -21,6 +21,11 @@
     "SPA",
     "SSR"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexichepura/story.git",
+    "directory": "pkg/core"
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rm -r dist"
@@ -28,5 +33,5 @@
   "sideEffects": false,
   "types": "dist/index.d.ts",
   "typings": "dist/index.d.ts",
-  "version": "0.2.0"
+  "version": "1.0.0"
 }
